@@ -1,6 +1,7 @@
 from django.db import models
 
 from registration.models import Profile
+from store.models import Store
 
 
 class Public(models.Model):
@@ -9,6 +10,7 @@ class Public(models.Model):
     bio = models.TextField(default='')
     profile_image = models.TextField(default='')
     active = models.BooleanField(default=True)
+    total_points = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     approved_at = models.DateTimeField(null=True)
@@ -21,3 +23,9 @@ class Public(models.Model):
 
     class Meta:
         verbose_name_plural = "Public"
+
+
+class PublicRedeems(models.Model):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=False)
+    points = models.IntegerField(default=0)
+    public = models.ForeignKey(Public, on_delete=models.CASCADE, null=False)

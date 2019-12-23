@@ -41,6 +41,10 @@ def retrieve_date_time(timestamp):
 
 
 def store_information(store):
+    if store.image:
+        image = MEDIA_URL + str(store.image.url)
+    else:
+        image = ''
     return {
         'name': store.name,
         'description': store.description,
@@ -49,5 +53,11 @@ def store_information(store):
         'created_at': retrieve_date_time(store.created_at),
         'updated_at': retrieve_date_time(store.updated_at),
         'added_by': store.added_by.username,
-        'store_id': store.id
+        'store_id': store.id,
+        'contact': store.contact,
+        'latitude': store.latitude,
+        'longitude': store.longitude,
+        'address': store.address,
+        'owner': store.owner,
+        'image': image
     }

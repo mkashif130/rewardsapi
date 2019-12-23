@@ -31,19 +31,32 @@ def add_new_store(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
-        data = json.loads(request.body.decode('utf-8'))
+        data = request.POST
         name = data['name'] if 'name' in data else None
         is_active = data['is_active'] if 'is_active' in data else True
         slogan = data['slogan'] if 'slogan' in data else ''
         description = data['description'] if 'description' in data else ''
+        contact = data['contact'] if 'contact' in data else ''
+        latitude = data['latitude'] if 'latitude' in data else 0
+        longitude = data['longitude'] if 'longitude' in data else 0
+        address = data['address'] if 'address' in data else ''
+        owner = data['owner'] if 'owner' in data else ''
+        image = request.FILES['image'] if 'image' in request.FILES else None
+
         if name is None:
             data = {"success": False}
             return {"data": data, "message": "Name is required Field", "status": BAD_REQUEST_CODE}
 
-        Store.objects.create(name=name, slogan=slogan, description=description,
-                             added_by=request.user, is_active=is_active,
-                             created_at=datetime.datetime.utcnow().timestamp(),
-                             updated_at=datetime.datetime.utcnow().timestamp())
+        store_ = Store.objects.create(name=name, slogan=slogan, description=description,
+                                      added_by=request.user, is_active=is_active,
+                                      contact=contact, latitude=latitude, longitude=longitude,
+                                      address=address, owner=owner,
+                                      created_at=datetime.datetime.utcnow().timestamp(),
+                                      updated_at=datetime.datetime.utcnow().timestamp())
+        if image:
+            store_.image = image
+            store_.save()
+
         data = {"success": True}
         return {"data": data, "message": "Store successfully added", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
@@ -57,12 +70,19 @@ def edit_store(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
-        data = json.loads(request.body.decode('utf-8'))
+        data = request.POST
         name = data['name'] if 'name' in data else None
         is_active = data['is_active'] if 'is_active' in data else None
         slogan = data['slogan'] if 'slogan' in data else None
         description = data['description'] if 'description' in data else None
         store_id = data['store_id'] if 'store_id' in data else None
+        contact = data['contact'] if 'contact' in data else ''
+        latitude = data['latitude'] if 'latitude' in data else 0
+        longitude = data['longitude'] if 'longitude' in data else 0
+        address = data['address'] if 'address' in data else ''
+        owner = data['owner'] if 'owner' in data else ''
+        image = request.FILES['image'] if 'image' in request.FILES else None
+
         if store_id is None:
             data = {"success": False}
             return {"data": data, "message": "Store id is required for updation", "status": BAD_REQUEST_CODE}
@@ -76,6 +96,18 @@ def edit_store(request):
             store.slogan = slogan
         if description:
             store.description = description
+        if contact:
+            store.contact = contact
+        if latitude:
+            store.latitude = latitude
+        if longitude:
+            store.longitude = longitude
+        if address:
+            store.address = address
+        if owner:
+            store.owner = owner
+        if image:
+            store.image = image
 
         store.updated_at = datetime.datetime.utcnow().timestamp()
         store.save()
@@ -142,4 +174,3 @@ def get_all_exceptions(request):
         exception_log_entry(e, requested_url, user_agent)
         data = {"success": False}
         return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
-
