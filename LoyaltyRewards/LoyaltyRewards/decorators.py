@@ -213,10 +213,8 @@ def log_every_request(request, response):
         response = json.loads(response)
 
         if request.method == 'POST' or request.method == 'PUT' or request.method == 'DELETE':
-            body = request.data
+            # body = request.data
             body = json.loads(str(request.body, 'utf-8'))
-            if body == 'None':
-                body = request.POST
         else:
             body = {}
         log_data = {'remote_address': request.META['REMOTE_ADDR'], 'server_hostname': socket.gethostname(),

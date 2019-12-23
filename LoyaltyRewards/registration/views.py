@@ -25,60 +25,89 @@ def generate_auth_token(user_id, device_type, user_agent, user_type):
                                user_type=user_type)
     return encoded_token
 
+#
+# def activate_account(request):
+#     requested_url = request.META.get('HTTP_REFERER', None)
+#     user_agent = request.META.get('HTTP_USER_AGENT', None)
+#     try:
+#         key = request.GET.get('key', '')
+#         try:
+#             try:
+#                 account_activation_instance = AccountActivationKeys.objects.get(key=key)
+#             except:
+#                 context = {
+#                     'description': 'This link has been expired or used'
+#                 }
+#                 return render(request, 'registration/activation-confirmation.html', context=context)
+#
+#             user = User.objects.get(id=account_activation_instance.user_id.id)
+#             activate_user(user)
+#
+#             try:
+#                 context = {
+#                     'description': 'Congratulations!!! Your account has successfully activated!!'
+#                 }
+#                 text_content = render_to_string('registration/activation-confirmation.html', context)
+#                 html_content = render_to_string('registration/activation-confirmation.html', context)
+#
+#                 email_instance = EmailMultiAlternatives('Welcome to Loyalty Rewards family', text_content)
+#                 email_instance.attach_alternative(html_content, "text/html")
+#                 email_instance.to = [user.username]
+#                 email_instance.send()
+#
+#             except:
+#                 pass
+#
+#             account_activation_instance.key = None
+#             account_activation_instance.is_removed = True
+#             account_activation_instance.save()
+#
+#             context = {
+#                 'description': 'Congratulations!!! Your account has successfully activated!!'
+#             }
+#             return render(request, 'registration/activation-confirmation.html', context=context)
+#
+#         except:
+#             context = {
+#                 'description': 'This link has been expired or used'
+#             }
+#             return render(request, 'registration/activation-confirmation.html', context=context)
+#
+#     except Exception as e:
+#         exception_log_entry(e, requested_url, user_agent)
+#         context = {
+#             'description': 'This link has been expired or used'
+#         }
+#         return render(request, 'registration/registration-confirmation.html', context=context)
 
+
+@public_rest_call(['POST'])
 def activate_account(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
-        key = request.GET.get('key', '')
+        data = json.loads(request.body.decode('utf-8'))
+        key = data['key']
         try:
-            try:
-                account_activation_instance = AccountActivationKeys.objects.get(key=key)
-            except:
-                context = {
-                    'description': 'This link has been expired or used'
-                }
-                return render(request, 'registration/activation-confirmation.html', context=context)
-
-            user = User.objects.get(id=account_activation_instance.user_id.id)
-            activate_user(user)
-
-            try:
-                context = {
-                    'description': 'Congratulations!!! Your account has successfully activated!!'
-                }
-                text_content = render_to_string('registration/activation-confirmation.html', context)
-                html_content = render_to_string('registration/activation-confirmation.html', context)
-
-                email_instance = EmailMultiAlternatives('Welcome to Loyalty Rewards family', text_content)
-                email_instance.attach_alternative(html_content, "text/html")
-                email_instance.to = [user.username]
-                email_instance.send()
-
-            except:
-                pass
-
-            account_activation_instance.key = None
-            account_activation_instance.is_removed = True
-            account_activation_instance.save()
-
-            context = {
-                'description': 'Congratulations!!! Your account has successfully activated!!'
-            }
-            return render(request, 'registration/activation-confirmation.html', context=context)
-
+            account_activation_instance = AccountActivationKeys.objects.get(key=key)
         except:
-            context = {
-                'description': 'This link has been expired or used'
-            }
-            return render(request, 'registration/activation-confirmation.html', context=context)
+            data = {"success": False}
+            return {"data": data, "message": "This code has been expired or used", "status": BAD_REQUEST_CODE}
+
+        user = User.objects.get(id=account_activation_instance.user_id.id)
+        activate_user(user)
+
+        account_activation_instance.key = None
+        account_activation_instance.is_removed = True
+        account_activation_instance.save()
+
+        data = {"success": True}
+        return {"data": data, "message": 'Congratulations!!! Your account has successfully activated!!', "status": SUCCESS_RESPONSE_CODE}
 
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
-        context = {
-            'description': 'This link has been expired or used'
-        }
-        return render(request, 'registration/registration-confirmation.html', context=context)
+        data = {"success": False}
+        return {"data": data, "message": 'Something went wrong', "status": BAD_REQUEST_CODE}
 
 #
 # @public_rest_call(['POST'])
@@ -186,7 +215,7 @@ def logout(request):
 
 def generate_random_string(length):
     key = ''.join(random.choice(string.ascii_letters) for x in range(length))
-    key = key + str(int(datetime.datetime.utcnow().timestamp()))
+    key = key
     return key
 
 
@@ -213,7 +242,7 @@ def sign_up(request):
             Public.objects.create(profile=profile, name=name)
 
             while True:
-                key = generate_random_string(20)
+                key = generate_random_string(10)
                 if not AccountActivationKeys.objects.filter(key=key).exists():
                     break
 
@@ -223,7 +252,7 @@ def sign_up(request):
 
             url_ = DOMAIN_URL + 'registration/activate_account?key=' + key
 
-            context = {'url': url_}
+            context = {'url': key}
 
             text_content = render_to_string('registration/registration-confirmation.html', context)
             html_content = render_to_string('registration/registration-confirmation.html', context)
