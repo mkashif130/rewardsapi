@@ -61,3 +61,13 @@ def store_information(store):
         'owner': store.owner,
         'image': image
     }
+
+
+def get_limit_and_page_from_request(request):
+    data = request
+    page = data['page'] if 'page' in data else DEFAULT_PAGE
+    limit = data['limit'] if 'limit' in data else DEFAULT_LIMIT
+
+    page = int(page)
+    limit = int(limit)
+    return page, limit

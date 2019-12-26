@@ -1,4 +1,5 @@
 from LoyaltyRewards.decorators import *
+from LoyaltyRewards.paginate import paginate
 from LoyaltyRewards.utils import *
 from store.models import Store
 
@@ -8,17 +9,19 @@ def get_request_logs(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
-        logs_ = LoggingOfEveryRequest.objects.all().order_by('-id')[:10]
-        logs_list = []
-        for obj in logs_:
+        logs_ = LoggingOfEveryRequest.objects.all().order_by('-id')
+        page, limit = get_limit_and_page_from_request(request.GET)
+
+        def extract(obj):
             obj = json.loads(obj.log_data)
             log_data = {'remote_address': obj['remote_address'], 'server_hostname': obj['server_hostname'],
                         'request_method': obj['request_method'], 'request_path': obj['request_path'],
                         'run_time': obj['run_time'], 'request_body': obj['request_body'],
                         'response_body': obj['response_body'],
                         'is_authenticated': obj['is_authenticated']}
-            logs_list.append(log_data)
-        data = {"logs_list": logs_list}
+            return log_data
+
+        data = paginate(logs_, extract, limit, page)
         return {"data": data, "message": "Log List", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
@@ -126,11 +129,13 @@ def get_all_stores(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
+        page, limit = get_limit_and_page_from_request(request.GET)
         stores = Store.objects.filter(is_removed=False)
-        stores_list = []
-        for obj in stores:
-            stores_list.append(store_information(obj))
-        data = {"stores_list": stores_list}
+
+        def extract(obj):
+            return store_information(obj)
+
+        data = paginate(stores, extract, limit, page)
         return {"data": data, "message": "Stores List", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
@@ -164,11 +169,13 @@ def get_all_exceptions(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
-        logs_ = LogEntryForException.objects.all().order_by('-id')[:10]
-        logs_list = []
-        for obj in logs_:
-            logs_list.append(obj.exception)
-        data = {"logs_list": logs_list}
+        page, limit = get_limit_and_page_from_request(request.GET)
+        logs_ = LogEntryForException.objects.all().order_by('-id')
+
+        def extract(obj):
+            return obj.exception
+
+        data = paginate(logs_, extract, limit, page)
         return {"data": data, "message": "Log List", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)

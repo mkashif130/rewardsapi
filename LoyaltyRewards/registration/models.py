@@ -15,6 +15,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
     role = models.IntegerField(blank=False, default=0, choices=ROLES_)
     name = models.TextField(default='')
+    contact_no = models.TextField(default='')
     # 0 for male
     # 1 for female
     # 2 for other

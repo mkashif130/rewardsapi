@@ -5,7 +5,7 @@ from store.models import Store
 
 
 class Public(models.Model):
-    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=255)
     bio = models.TextField(default='')
     profile_image = models.TextField(default='')

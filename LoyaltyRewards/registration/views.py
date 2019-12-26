@@ -6,7 +6,6 @@ import string
 
 from django.contrib.auth import authenticate
 from django.core.mail import EmailMultiAlternatives
-from django.shortcuts import render
 from django.template.loader import render_to_string
 
 from LoyaltyRewards.decorators import *
@@ -24,6 +23,7 @@ def generate_auth_token(user_id, device_type, user_agent, user_type):
     UserSession.objects.create(user_id_id=user_id, user_agent=user_agent, login_time=login_time,
                                user_type=user_type)
     return encoded_token
+
 
 #
 # def activate_account(request):
@@ -102,12 +102,14 @@ def activate_account(request):
         account_activation_instance.save()
 
         data = {"success": True}
-        return {"data": data, "message": 'Congratulations!!! Your account has successfully activated!!', "status": SUCCESS_RESPONSE_CODE}
+        return {"data": data, "message": 'Congratulations!!! Your account has successfully activated!!',
+                "status": SUCCESS_RESPONSE_CODE}
 
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
         data = {"success": False}
         return {"data": data, "message": 'Something went wrong', "status": BAD_REQUEST_CODE}
+
 
 #
 # @public_rest_call(['POST'])
@@ -228,6 +230,7 @@ def sign_up(request):
         email = data['email'].lower().strip()
         password = data['password']
         name = data['name'] if 'name' in data else ''
+        contact_no = data['contact_no'] if 'contact_no' in data else ''
 
         if User.objects.filter(username=email).exists():
             data = {"success": False}
@@ -239,6 +242,8 @@ def sign_up(request):
             user_object.is_active = False
             user_object.save()
             profile = Profile.objects.create(user=user_object, role=0, name=name)
+            profile.contact_no = contact_no
+            profile.save()
             Public.objects.create(profile=profile, name=name)
 
             while True:
@@ -249,8 +254,6 @@ def sign_up(request):
             ack, created = AccountActivationKeys.objects.get_or_create(user_id=user_object)
             ack.key = key
             ack.save()
-
-            url_ = DOMAIN_URL + 'registration/activate_account?key=' + key
 
             context = {'url': key}
 
