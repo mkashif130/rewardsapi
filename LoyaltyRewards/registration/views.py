@@ -158,34 +158,46 @@ def activate_account(request):
 
 @public_rest_call(['POST'])
 def login(request):
-    data = json.loads(request.body.decode('utf-8'))
-    username = data['email']
-    password = data['password']
-    username = username.lower().strip()
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        username = data['email']
+        password = data['password']
+        username = username.lower().strip()
 
-    user = authenticate(username=username, password=password)
-    if user is not None:
-        if user.is_active:
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            # if user.is_active:
             if user.is_superuser:
                 token = generate_auth_token(user.id, '', '', 1)
                 data = {"access_token": token, "profile_info": {'name': user.first_name}}
                 return {"data": data, "message": "Success", "status": SUCCESS_RESPONSE_CODE}
             else:
-                if Profile.objects.filter(user=user, is_account_active=True).exists():
-                    profile = Profile.objects.get(user=user)
-                    token = generate_auth_token(user.id, '', '', profile.role)
-                    profile_info = login_signup_info(profile)
-                    data = {"access_token": token, "profile_info": profile_info}
-                    return {"data": data, "message": "Success", "status": SUCCESS_RESPONSE_CODE}
+                # if Profile.objects.filter(user=user).exists():
+                profile = Profile.objects.get(user=user)
+                token = generate_auth_token(user.id, '', '', profile.role)
+                profile_info = login_signup_info(profile)
+                data = {"access_token": token, "profile_info": profile_info}
+                if user.is_active:
+                    is_active_user = True
+                    message = "Success!!"
                 else:
-                    data = {"success": False}
-                    return {"data": data, "message": "Your account is not active yet", "status": BAD_REQUEST_CODE}
+                    is_active_user = False
+                    message = "Your account is not activated yet"
+                data['is_active_user'] = is_active_user
+                return {"data": data, "message": message, "status": SUCCESS_RESPONSE_CODE}
+                # else:
+                #     data = {"success": False}
+                #     return {"data": data, "message": "Your account is not active yet", "status": BAD_REQUEST_CODE}
         else:
             data = {"success": False}
-            return {"data": data, "message": "Your account is not active yet", "status": BAD_REQUEST_CODE}
-    else:
+            return {"data": data, "message": "Incorrect email or password", "status": BAD_REQUEST_CODE}
+
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
         data = {"success": False}
-    return {"data": data, "message": "Incorrect username or password", "status": BAD_REQUEST_CODE}
+        return {"data": data, "message": 'Something went wrong', "status": BAD_REQUEST_CODE}
 
 
 @authenticated_rest_call(['GET', 'POST'])

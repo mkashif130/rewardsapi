@@ -25,7 +25,12 @@ def dashboard(request):
         total_points = random.randint(15, 600)
         total_amount = random.randint(15, 600)
         name = public.profile.name
-        data = {"stores_list": stores_list, 'name': name, 'total_points': total_points, 'total_amount': total_amount}
+        if request.profile.is_account_active:
+            is_active_user = True
+        else:
+            is_active_user = False
+        data = {"stores_list": stores_list, 'name': name, 'total_points': total_points, 'total_amount': total_amount,
+                'is_active_user': is_active_user}
         return {"data": data, "message": "Stores List", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
