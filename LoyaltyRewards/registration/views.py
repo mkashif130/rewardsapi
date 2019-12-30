@@ -228,7 +228,8 @@ def logout(request):
 
 
 def generate_random_string(length):
-    key = ''.join(random.choice(string.ascii_letters) for x in range(length))
+    choices = list(range(10))
+    key = ''.join(str(random.choice(choices)) for x in range(length))
     key = key
     return key
 
@@ -259,7 +260,7 @@ def sign_up(request):
             Public.objects.create(profile=profile, name=name)
 
             while True:
-                key = generate_random_string(10)
+                key = generate_random_string(4)
                 if not AccountActivationKeys.objects.filter(key=key).exists():
                     break
 
