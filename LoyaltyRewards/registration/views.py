@@ -277,8 +277,21 @@ def sign_up(request):
             email_instance.attach_alternative(html_content, "text/html")
             email_instance.to = [email]
             email_instance.send()
-            data = {"success": True}
-            return {"data": data, "message": "Please activate your account!!", "status": SUCCESS_RESPONSE_CODE}
+
+            token = generate_auth_token(user_object.id, '', '', profile.role)
+            profile_info = login_signup_info(profile)
+            data = {"access_token": token, "profile_info": profile_info}
+            if user_object.is_active:
+                is_active_user = True
+                message = "Success!!"
+            else:
+                is_active_user = False
+                message = "Your account is not activated yet"
+            data['is_active_user'] = is_active_user
+            return {"data": data, "message": message, "status": SUCCESS_RESPONSE_CODE}
+
+            # data = {"success": True}
+            # return {"data": data, "message": "Please activate your account!!", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         print(e)
         exception_log_entry(e, requested_url, user_agent)
