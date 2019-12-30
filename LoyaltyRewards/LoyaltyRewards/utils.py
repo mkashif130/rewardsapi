@@ -24,6 +24,11 @@ def login_signup_info(profile):
     image = DEFAULT_IMAGE
     if profile.name:  name = profile.name
     if profile.profile_image:  image = MEDIA_URL + str(profile.profile_image.url)
+    name = profile.user.username
+    try:
+        name, id_ = name.split('@')
+    except:
+        pass
 
     profile_info = {
         "role": profile.role,
