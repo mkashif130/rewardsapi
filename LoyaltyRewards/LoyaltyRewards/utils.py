@@ -1,5 +1,5 @@
 import datetime
-
+import qrcode
 from registration.models import LogEntryForException, Profile
 from .constants import *
 
@@ -50,6 +50,14 @@ def store_information(store):
         image = MEDIA_URL + str(store.image.url)
     else:
         image = ''
+
+    if not store.qrcode:
+        path_ = generate_qr_code(store.id)
+        store.qrcode = path_
+        store.save()
+
+    qr_code_value = MEDIA_URL + '/' + store.qrcode
+
     return {
         'name': store.name,
         'description': store.description,
@@ -64,7 +72,8 @@ def store_information(store):
         'longitude': store.longitude,
         'address': store.address,
         'owner': store.owner,
-        'image': image
+        'image': image,
+        'qrcode': qr_code_value
     }
 
 
@@ -76,3 +85,18 @@ def get_limit_and_page_from_request(request):
     page = int(page)
     limit = int(limit)
     return page, limit
+
+
+def generate_qr_code(store_id):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data({'store_id': int(store_id)})
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    path_ = 'media/store/qrcode' + str(store_id) + '.jpg'
+    img.save('media/store/qrcode' + str(store_id) + '.jpg')
+    return path_

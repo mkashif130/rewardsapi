@@ -1,3 +1,4 @@
+import qrcode
 import random
 
 from LoyaltyRewards.decorators import *
@@ -31,6 +32,29 @@ def dashboard(request):
             is_active_user = False
         data = {"stores_list": stores_list, 'name': name, 'total_points': total_points, 'total_amount': total_amount,
                 'is_active_user': is_active_user}
+        return {"data": data, "message": "Stores List", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@authenticated_rest_call(['GET'])
+def get_qr_code_of_store(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        store_id = request.GET.get('store_id', None)
+        store = Store.objects.get(id=int(store_id))
+        if store.qrcode == '':
+            qr_code_value = store.qrcode
+        else:
+            path_ = generate_qr_code(store_id)
+            store.qrcode = path_
+            store.save()
+            qr_code_value = store.qrcode
+
+        data = {"qr_code": MEDIA_URL + '/' + qr_code_value}
         return {"data": data, "message": "Stores List", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)

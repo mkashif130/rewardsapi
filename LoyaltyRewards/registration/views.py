@@ -297,3 +297,50 @@ def sign_up(request):
         exception_log_entry(e, requested_url, user_agent)
         data = {"success": False}
         return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@public_rest_call(['POST'])
+def resend_activation_code(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        email = data['email'].lower().strip()
+
+        user_object = User.objects.filter(username=email).last()
+        if not user_object:
+            return {"data": data, "message": "No account exists against this email!",
+                    "status": SUCCESS_RESPONSE_CODE}
+        if not user_object.is_active:
+            ack = AccountActivationKeys.objects.filter(user_id=user_object, is_removed=False).last()
+            if ack:
+                if ack.key is not None:
+                    while True:
+                        key = generate_random_string(4)
+                        if not AccountActivationKeys.objects.filter(key=key).exists():
+                            break
+
+                    context = {
+                        'url': str(key)
+                    }
+                    try:
+                        text_content = render_to_string('registration/registration-confirmation.html', context)
+                        html_content = render_to_string('registration/registration-confirmation.html', context)
+
+                        email_instance = EmailMultiAlternatives('Account Activation Loyalty Rewards', text_content)
+                        email_instance.attach_alternative(html_content, "text/html")
+                        email_instance.to = [email]
+                        email_instance.send()
+
+                    except Exception as e:
+                        exception_log_entry(e, requested_url, user_agent)
+
+                    data = {"success": True}
+                    return {"data": data, "message": "Please check your email address!", "status": SUCCESS_RESPONSE_CODE}
+
+        return {"data": data, "message": "Your account is already activated!", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        print(e)
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}

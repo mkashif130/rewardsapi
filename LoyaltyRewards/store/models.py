@@ -12,6 +12,7 @@ class Store(models.Model):
     address = models.TextField(default='')
     owner = models.TextField(default='')
     image = models.ImageField(upload_to='store', null=True)
+    qrcode = models.TextField(default='')
     is_active = models.BooleanField(default=True)
     is_removed = models.BooleanField(default=False)
     added_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
