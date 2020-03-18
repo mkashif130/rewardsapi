@@ -132,7 +132,8 @@ ALGORITHM_JWT = 'HS256'
 SECRET_KEY_JWT = 'Loyalty'
 ROLES = {
     'public': 0,
-    'superadmin': 1
+    'superadmin': 1,
+    'storeowner': 2
 }
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #

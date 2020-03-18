@@ -97,6 +97,6 @@ def generate_qr_code(store_id):
     qr.add_data({'store_id': int(store_id)})
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    path_ = 'media/store/qrcode' + str(store_id) + '.jpg'
-    img.save('media/store/qrcode' + str(store_id) + '.jpg')
+    path_ = 'media/img' + str(store_id) + '.jpg'
+    img.save('media/img' + str(store_id) + '.jpg')
     return path_

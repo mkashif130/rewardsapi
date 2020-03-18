@@ -11,6 +11,7 @@ class Public(models.Model):
     profile_image = models.TextField(default='')
     active = models.BooleanField(default=True)
     total_points = models.IntegerField(default=0)
+    qr_code = models.TextField(default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     approved_at = models.DateTimeField(null=True)

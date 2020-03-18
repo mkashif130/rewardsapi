@@ -1,7 +1,7 @@
 from LoyaltyRewards.decorators import *
 from LoyaltyRewards.paginate import paginate
 from LoyaltyRewards.utils import *
-from store.models import Store
+from store.models import Store, StoreOwner, StoreOffers
 
 
 @authenticated_rest_call_super_admin(['GET'])
@@ -44,16 +44,37 @@ def add_new_store(request):
         longitude = data['longitude'] if 'longitude' in data else 0
         address = data['address'] if 'address' in data else ''
         owner = data['owner'] if 'owner' in data else ''
+        owner_email = data['owner_email'] if 'owner_email' in data else None
         image = request.FILES['image'] if 'image' in request.FILES else None
+
+        if owner_email is None:
+            data = {"success": False}
+            return {"data": data, "message": "Store Owner Email Is Required", "status": BAD_REQUEST_CODE}
 
         if name is None:
             data = {"success": False}
             return {"data": data, "message": "Name is required Field", "status": BAD_REQUEST_CODE}
 
+        owner_email = owner_email.strip()
+        owner_email = owner_email.lower()
+        user_, created = User.objects.get_or_create(username=owner_email,
+                                                    email=owner_email)
+        user_.first_name = owner
+        user_.save()
+        profile, created = Profile.objects.get_or_create(user=user_)
+        profile.name = owner
+        profile.role = 3
+        profile.save()
+
+        store_owner, created = StoreOwner.objects.get_or_create(profile=profile)
+        store_owner.name = owner
+        store_owner.save()
+
         store_ = Store.objects.create(name=name, slogan=slogan, description=description,
                                       added_by=request.user, is_active=is_active,
                                       contact=contact, latitude=latitude, longitude=longitude,
                                       address=address, owner=owner,
+                                      store_owner=store_owner,
                                       created_at=datetime.datetime.utcnow().timestamp(),
                                       updated_at=datetime.datetime.utcnow().timestamp())
         if image:
@@ -177,6 +198,85 @@ def get_all_exceptions(request):
 
         data = paginate(logs_, extract, limit, page)
         return {"data": data, "message": "Log List", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@authenticated_rest_call_super_admin(['POST'])
+def add_new_offer(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        data = request.POST
+        title = data['title'] if 'title' in data else None
+        store_id = data['store_id'] if 'store_id' in data else None
+        description = data['description'] if 'description' in data else ''
+        image = request.FILES['image'] if 'image' in request.FILES else None
+
+        if title is None:
+            data = {"success": False}
+            return {"data": data, "message": "Title is required Field", "status": BAD_REQUEST_CODE}
+
+        if store_id is None:
+            data = {"success": False}
+            return {"data": data, "message": "Store is required Field", "status": BAD_REQUEST_CODE}
+
+        store = Store.objects.get(id=store_id)
+        offer = StoreOffers.objects.create(store=store,
+                                           title=title,
+                                           description=description,
+                                           created_at=datetime.datetime.utcnow().timestamp(),
+                                           updated_at=datetime.datetime.utcnow().timestamp()
+                                           )
+        if image:
+            offer.banner = image
+            offer.save()
+
+        data = {"success": True}
+        return {"data": data, "message": "Store offer successfully added", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@authenticated_rest_call_super_admin(['POST'])
+def edit_store_offer(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        data = request.POST
+        title = data['title'] if 'title' in data else None
+        store_id = data['store_id'] if 'store_id' in data else None
+        offer_id = data['offer_id'] if 'offer_id' in data else None
+        description = data['description'] if 'description' in data else ''
+        image = request.FILES['image'] if 'image' in request.FILES else None
+
+        if offer_id is None:
+            data = {"success": False}
+            return {"data": data, "message": "Offer ID is required Field", "status": BAD_REQUEST_CODE}
+
+        offer = StoreOffers.objects.get(id=int(offer_id))
+        if store_id:
+            store = Store.objects.get(id=store_id)
+            offer.store = store
+
+        if title:
+            offer.title = title
+
+        if description:
+            offer.description = description
+
+        if image:
+            offer.banner = image
+
+        offer.updated_at = datetime.datetime.utcnow().timestamp()
+        offer.save()
+
+        data = {"success": True}
+        return {"data": data, "message": "Store offer successfully added", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
         data = {"success": False}

@@ -4,6 +4,7 @@ import random
 from LoyaltyRewards.decorators import *
 from LoyaltyRewards.utils import *
 from .models import *
+from store.models import StoreOffers
 
 
 @authenticated_rest_call(['GET'])
@@ -40,21 +41,60 @@ def dashboard(request):
 
 
 @authenticated_rest_call(['GET'])
-def get_qr_code_of_store(request):
+def get_qr_code_of_user(request):
     requested_url = request.META.get('HTTP_REFERER', None)
     user_agent = request.META.get('HTTP_USER_AGENT', None)
     try:
-        store_id = request.GET.get('store_id', None)
-        store = Store.objects.get(id=int(store_id))
-        if store.qrcode == '':
-            qr_code_value = store.qrcode
+        public = Public.objects.get(profile=request.profile)
+        if public.qr_code != '':
+            qr_code_value = public.qr_code
         else:
-            path_ = generate_qr_code(store_id)
-            store.qrcode = path_
-            store.save()
-            qr_code_value = store.qrcode
+            path_ = generate_qr_code(public.id)
+            public.qr_code = path_
+            public.save()
+            qr_code_value = public.qr_code
 
         data = {"qr_code": MEDIA_URL + '/' + qr_code_value}
+        return {"data": data, "message": "Stores List", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@authenticated_rest_call(['GET'])
+def get_store_offers(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        stores = StoreOffers.objects.filter(is_valid=False)
+        public = Public.objects.get(profile=request.profile)
+        stores_list = []
+        for obj in stores:
+            store = store_information(obj.store)
+            if PublicRedeems.objects.filter(store=obj.store, public=public).exists():
+                store['points'] = PublicRedeems.objects.filter(store=obj.store, public=public).last().points
+            else:
+                store['points'] = 0
+            store['points'] = random.randint(10, 1000)
+            banner = DEFAULT_IMAGE
+            if obj.banner:
+                banner = MEDIA_URL + str(obj.banner.url)
+            offer = {
+                'store': store,
+                'description': obj.description,
+                'title': obj.title,
+                'banner': banner
+            }
+            stores_list.append(offer)
+
+        name = public.profile.name
+        if request.profile.is_account_active:
+            is_active_user = True
+        else:
+            is_active_user = False
+        data = {"offers_list": stores_list, 'name': name,
+                'is_active_user': is_active_user}
         return {"data": data, "message": "Stores List", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
