@@ -214,10 +214,18 @@ def add_new_offer(request):
         store_id = data['store_id'] if 'store_id' in data else None
         description = data['description'] if 'description' in data else ''
         image = request.FILES['image'] if 'image' in request.FILES else None
+        is_valid = request.data['is_valid'] if 'is_valid' in data else None
+        points = request.data['points'] if 'points' in data else 1
+
+        points = int(points)
 
         if title is None:
             data = {"success": False}
             return {"data": data, "message": "Title is required Field", "status": BAD_REQUEST_CODE}
+
+        if points is None:
+            data = {"success": False}
+            return {"data": data, "message": "points is required Field", "status": BAD_REQUEST_CODE}
 
         if store_id is None:
             data = {"success": False}
@@ -226,13 +234,21 @@ def add_new_offer(request):
         store = Store.objects.get(id=store_id)
         offer = StoreOffers.objects.create(store=store,
                                            title=title,
+                                           points=points,
                                            description=description,
                                            created_at=datetime.datetime.utcnow().timestamp(),
                                            updated_at=datetime.datetime.utcnow().timestamp()
                                            )
         if image:
             offer.banner = image
-            offer.save()
+
+        if is_valid is not None:
+            if is_valid == 'true':
+                is_valid = True
+            else:
+                is_valid = False
+            offer.is_valid = is_valid
+        offer.save()
 
         data = {"success": True}
         return {"data": data, "message": "Store offer successfully added", "status": SUCCESS_RESPONSE_CODE}
@@ -251,8 +267,12 @@ def edit_store_offer(request):
         title = data['title'] if 'title' in data else None
         store_id = data['store_id'] if 'store_id' in data else None
         offer_id = data['offer_id'] if 'offer_id' in data else None
+        is_valid = data['is_valid'] if 'is_valid' in data else None
         description = data['description'] if 'description' in data else ''
+        points = data['points'] if 'points' in data else 1
         image = request.FILES['image'] if 'image' in request.FILES else None
+
+        points = int(points)
 
         if offer_id is None:
             data = {"success": False}
@@ -272,11 +292,41 @@ def edit_store_offer(request):
         if image:
             offer.banner = image
 
+        offer.points = points
+
+        if is_valid is not None:
+            if is_valid == 'true':
+                is_valid = True
+            else:
+                is_valid = False
+            offer.is_valid = is_valid
+
         offer.updated_at = datetime.datetime.utcnow().timestamp()
         offer.save()
 
         data = {"success": True}
         return {"data": data, "message": "Store offer successfully added", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@authenticated_rest_call_super_admin(['DELETE'])
+def delete_store_offer(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        offer_id = data['offer_id'] if 'offer_id' in data else None
+        if offer_id is None:
+            data = {"success": False}
+            return {"data": data, "message": "Offer id is required for deletion", "status": BAD_REQUEST_CODE}
+        offer_id = StoreOffers.objects.get(id=offer_id)
+        offer_id.is_removed = True
+        offer_id.save()
+        data = {"success": True}
+        return {"data": data, "message": "Deleted successfully", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:
         exception_log_entry(e, requested_url, user_agent)
         data = {"success": False}

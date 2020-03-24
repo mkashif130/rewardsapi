@@ -30,3 +30,10 @@ class PublicRedeems(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, null=False)
     points = models.IntegerField(default=0)
     public = models.ForeignKey(Public, on_delete=models.CASCADE, null=False)
+
+
+class PublicStore(models.Model):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True)
+    public = models.ForeignKey(Public, on_delete=models.CASCADE, null=True)
+    points = models.IntegerField(default=0)
+    created_at = models.IntegerField(default=0)

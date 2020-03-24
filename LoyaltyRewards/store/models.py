@@ -54,7 +54,9 @@ class StoreOffers(models.Model):
     banner = models.ImageField(upload_to='store_offers', null=True)
     title = models.TextField(default='')
     description = models.TextField(default='')
+    points = models.IntegerField(default=1)
     is_valid = models.BooleanField(default=False)
+    is_removed = models.BooleanField(default=False)
     created_at = models.IntegerField(default=0)
     updated_at = models.IntegerField(default=0)
 
