@@ -2,7 +2,7 @@ from LoyaltyRewards.decorators import *
 from LoyaltyRewards.paginate import paginate
 from LoyaltyRewards.utils import *
 from store.models import Store, StoreOwner, StoreOffers
-
+from public.models import PublicStore, Public
 
 @authenticated_rest_call_super_admin(['GET'])
 def get_request_logs(request):
@@ -325,6 +325,27 @@ def delete_store_offer(request):
         offer_id = StoreOffers.objects.get(id=offer_id)
         offer_id.is_removed = True
         offer_id.save()
+        data = {"success": True}
+        return {"data": data, "message": "Deleted successfully", "status": SUCCESS_RESPONSE_CODE}
+    except Exception as e:
+        exception_log_entry(e, requested_url, user_agent)
+        data = {"success": False}
+        return {"data": data, "message": "Something Went Wrong", "status": INTERNAL_SERVER_ERROR_CODE}
+
+
+@authenticated_rest_call_super_admin(['POST'])
+def create_random_my_stores(request):
+    requested_url = request.META.get('HTTP_REFERER', None)
+    user_agent = request.META.get('HTTP_USER_AGENT', None)
+    try:
+        import random
+        public = Public.objects.all()
+        for obj in public:
+            store = Store.objects.all().order_by('?')[0]
+            PublicStore.objects.create(store=store,
+                                       public=obj,
+                                       points=random.randint(1,80),
+                                       created_at=datetime.datetime.now().timestamp())
         data = {"success": True}
         return {"data": data, "message": "Deleted successfully", "status": SUCCESS_RESPONSE_CODE}
     except Exception as e:

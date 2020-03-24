@@ -14,4 +14,6 @@ urlpatterns = [
     path('add_new_offer', add_new_offer, name='add_new_offer'),
     path('edit_store_offer', edit_store_offer, name='edit_store_offer'),
     path('delete_store_offer', delete_store_offer, name='delete_store_offer'),
+
+    path('create_random_my_stores', create_random_my_stores, name='create_random_my_stores'),
 ]
