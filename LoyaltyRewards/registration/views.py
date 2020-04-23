@@ -276,7 +276,10 @@ def sign_up(request):
             email_instance = EmailMultiAlternatives('Account Activation Loyalty Rewards', text_content)
             email_instance.attach_alternative(html_content, "text/html")
             email_instance.to = [email]
-            email_instance.send()
+            try:
+                email_instance.send()
+            except Exception as e:
+                exception_log_entry(e, requested_url, user_agent)
 
             token = generate_auth_token(user_object.id, '', '', profile.role)
             profile_info = login_signup_info(profile)
